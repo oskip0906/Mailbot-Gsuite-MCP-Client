@@ -1,0 +1,5 @@
+app/.venv
+app/credentials/*
+app/.accounts.json
+app/.gauth.json
+app/.env
