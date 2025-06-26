@@ -1,7 +1,5 @@
-import asyncio
 import json
 import os
-import sys
 from typing import Dict, Any, Optional, List
 import httpx
 from dotenv import load_dotenv
@@ -26,7 +24,7 @@ class InteractiveMCPClient:
         current_date = current_datetime.strftime("%A, %B %d, %Y")
         current_time = current_datetime.strftime("%I:%M %p")
         timezone_name = current_datetime.astimezone().tzname()
-        self.header_context += f"\nThe current date is: {current_date}. The current time is: {current_time}. For time-related tasks, use the following time zone: {timezone_name}.\n"
+        self.header_context += f"\nThe current date is: {current_date}. The current time is: {current_time}. For time or date related tasks, use the following time zone: {timezone_name}.\n"
 
         try:
             self.llm_client = genai.Client(api_key=llm_api_key)
@@ -63,15 +61,22 @@ class InteractiveMCPClient:
         except Exception as e:
             print(f"⚠️ Could not fetch tools from server: {e}")
             return None
-
+        
         # Convert tool specifications from the server into the format required by the Gemini API.
         function_declarations = []
         for tool_spec in tools_info:
             input_schema = tool_spec.get('input_schema')
 
-            # The server provides a custom 'required' boolean in each parameter.
-            # We need to convert this to a top-level 'required' list for the Gemini API.
             if input_schema and 'properties' in input_schema:
+                properties = input_schema['properties']
+                new_properties = {}
+                for key, value in properties.items():
+                    if 'user_id' in key:
+                        new_properties['__user_id__'] = value
+                    else:
+                        new_properties[key] = value
+                input_schema['properties'] = new_properties
+
                 required_params = [
                     param_name for param_name, param_props in input_schema['properties'].items()
                     if param_props.pop('required', False)
@@ -119,6 +124,15 @@ class InteractiveMCPClient:
             
             # Convert the arguments from a Struct to a dictionary.
             arguments = {key: value for key, value in function_call.args.items()}
+
+            # Ensure user_id fields are correctly named.
+            new_arguments = {}
+            for key, value in arguments.items():
+                if 'user_id' in key:
+                    new_arguments['__user_id__'] = value
+                else:
+                    new_arguments[key] = value
+            arguments = new_arguments
 
             available_tool_names = [t['name'] for t in tools_info]
             if tool_name not in available_tool_names:
@@ -265,32 +279,18 @@ class InteractiveMCPClient:
                 return str(result)
 
     async def compress_context(self):
-        """Compress conversation history using the LLM"""
-        print("Compressing conversation history...")
-        try:
-
-            # Create the prompt for summarization
-            prompt = f"""Summarize the following conversation in detail, keeping the most important information. 
-            The summary should be less than {self.max_context_words} words.
-
-            CONVERSATION:
-            {self.conversation_history}
-            """
-
-            # Call the LLM to get the summary
-            response = self.llm_client.models.generate_content(
-                model=self.llm_model_name,
-                contents=prompt
-            )
-            summary = response.text.strip()
-
-            # Replace the history with the summary
-            self.conversation_history = summary
+        """Compress conversation history by truncating the oldest parts."""
+        print("Compressing conversation history by truncation...")
+        words = self.conversation_history.split()
+        
+        if len(words) > self.max_context_words:
+            # Keep the last `max_context_words` words
+            words_to_keep = words[-self.max_context_words:]
+            self.conversation_history = " ".join(words_to_keep)
+            
+            # Reset interaction count as the context has been shortened
             self.interaction_count = 0
-            print("✅ Context compression successful.")
-
-        except Exception as e:
-            print(f"⚠️ Context compression failed: {e}")
+            print(f"✅ Context compression successful. Kept last {self.max_context_words} words.")
 
 app = Flask(__name__)
 
@@ -302,7 +302,7 @@ server_url = os.getenv('MCP_SERVER_URL')
 
 # Set header context and max context words
 header_context="My name is Oscar Pang, I am an university student studying computer science."
-max_context_words = 200
+max_context_words = 1000
 
 # Initialize the client
 try:

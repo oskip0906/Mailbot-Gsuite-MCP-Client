@@ -2,10 +2,8 @@
 FastAPI HTTP wrapper for MCP client
 Exposes MCP functionality through REST API endpoints
 """
-import asyncio
-import json
 from typing import Dict, Any, Optional, List
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn

@@ -1,5 +1,9 @@
 app/.venv
-app/credentials/*
-app/.accounts.json
-app/.gauth.json
+app/__pycache__/
 app/.env
+
+server/credentials/
+server/.accounts.json
+server/.gauth.json
+server/.env
+server/__pycache__/

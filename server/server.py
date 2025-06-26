@@ -1,6 +1,5 @@
-import asyncio, mcp
+import mcp
 from mcp.client.stdio import stdio_client
-from mcp.types import CallToolRequest
 
 server_params = mcp.StdioServerParameters(
     command="uvx.exe",
