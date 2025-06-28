@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 import httpx
 from dotenv import load_dotenv
 from google import genai
@@ -22,9 +22,8 @@ class InteractiveMCPClient:
         # Add date/time to the context
         current_datetime = datetime.datetime.now()
         current_date = current_datetime.strftime("%A, %B %d, %Y")
-        current_time = current_datetime.strftime("%I:%M %p")
         timezone_name = current_datetime.astimezone().tzname()
-        self.header_context += f"\nThe current date is: {current_date}. The current time is: {current_time}. For time or date related tasks, use the following time zone: {timezone_name}.\n"
+        self.header_context += f"\nThe current date is: {current_date}. For timezone parameters, you MUST use the {timezone_name} timezone.\n"
 
         try:
             self.llm_client = genai.Client(api_key=llm_api_key)
@@ -69,13 +68,8 @@ class InteractiveMCPClient:
 
             if input_schema and 'properties' in input_schema:
                 properties = input_schema['properties']
-                new_properties = {}
-                for key, value in properties.items():
-                    if 'user_id' in key:
-                        new_properties['__user_id__'] = value
-                    else:
-                        new_properties[key] = value
-                input_schema['properties'] = new_properties
+                if 'user_id' in properties:
+                    properties['__user_id__'] = properties.pop('user_id')
 
                 required_params = [
                     param_name for param_name, param_props in input_schema['properties'].items()
@@ -108,7 +102,7 @@ class InteractiveMCPClient:
                 config=types.GenerateContentConfig(
                     temperature=0,
                     tools=gemini_tools
-                ),
+                )
             )
 
             # Check the response for a tool call.
@@ -126,13 +120,8 @@ class InteractiveMCPClient:
             arguments = {key: value for key, value in function_call.args.items()}
 
             # Ensure user_id fields are correctly named.
-            new_arguments = {}
-            for key, value in arguments.items():
-                if 'user_id' in key:
-                    new_arguments['__user_id__'] = value
-                else:
-                    new_arguments[key] = value
-            arguments = new_arguments
+            if 'user_id' in arguments:
+                arguments['__user_id__'] = arguments.pop('user_id')
 
             available_tool_names = [t['name'] for t in tools_info]
             if tool_name not in available_tool_names:
@@ -231,52 +220,56 @@ class InteractiveMCPClient:
         try:
             async with httpx.AsyncClient(base_url=self.server_url, timeout=30.0) as http_client:
                 request_body = {"tool_name": tool_name, "arguments": arguments}
-                response = await http_client.post("/tools/call", json=request_body)
+                response = await http_client.post("/tools/call", json=request_body, timeout=30.0)
                 response.raise_for_status()
                 result = response.json()
 
             if result.get('success'):
-                response = self.generate_response(tool_name, result.get('result'), user_input)
-                return {"response": response}
+                summary, raw_json = self.generate_response(tool_name, result.get('result'), user_input)
+                return {"response": summary, "raw_json": raw_json, "tool_used": tool_name, "tool_input": arguments}
             else:
-                return {"error": result.get('error', 'Unknown error')}
+                return {"error": result.get('error', 'Unknown error'), "tool_used": tool_name, "tool_input": arguments}
         except Exception as e:
-            return {"error": f"An error occurred while calling the tool: {e}"}
+            return {"error": f"An error occurred while calling the tool: {e}", "tool_used": tool_name, "tool_input": arguments}
 
-    def generate_response(self, tool_name: str, result: Any, user_input: str) -> str:
-        """Format tool execution result using Gemini to provide a summary"""
+    def generate_response(self, tool_name: str, result: Any, user_input: str) -> Tuple[str, str]:
+        """Format tool execution result using Gemini to provide a summary and return the raw JSON."""
         try:
             # Convert result to string for processing
             result_str = json.dumps(result, indent=2) if isinstance(result, (dict, list)) else str(result)
             
             # Use Gemini to summarize the result
-            prompt = f'''
+            prompt = f"""
             Summarize the tool execution results in a clear, user-friendly way.
             If the result contains items with IDs (like email IDs or event IDs), you MUST include them in the summary as they are needed for follow-up actions like deleting or reading a specific item.
             Avoid showing raw JSON.
+            
+            CONVERSATION HISTORY:
+            {self.conversation_history}
             
             TOOL EXECUTED: {tool_name}
             USER REQUEST: {user_input}
             RAW RESULT:
             {result_str}
-            '''
+            """
         
             response = self.llm_client.models.generate_content(
                 model=self.llm_model_name,
                 contents=prompt
             )
 
-            return response.text.strip()
+            summary = response.text.strip()
+            return summary, result_str
             
         except Exception as e:
             # Fallback to simple formatting if Gemini fails
             print(f"⚠️ Could not generate LLM response: {e}")
-            if isinstance(result, dict):
-                return json.dumps(result, indent=2)
-            elif isinstance(result, list):
-                return json.dumps(result, indent=2)
+            if isinstance(result, (dict, list)):
+                result_str = json.dumps(result, indent=2)
+                return result_str, result_str
             else:
-                return str(result)
+                result_str = str(result)
+                return result_str, result_str
 
     async def compress_context(self):
         """Compress conversation history by truncating the oldest parts."""
@@ -301,7 +294,9 @@ llm_model = os.getenv('LLM_MODEL')
 server_url = os.getenv('MCP_SERVER_URL')
 
 # Set header context and max context words
-header_context="My name is Oscar Pang, I am an university student studying computer science."
+user_context="My name is Oscar Pang, I am an university student studying computer science."
+system_context = "You are an AI assistant with deep expertise in Google Workspace. You can answer user questions about Gmail and Google Calendar, and you can execute actions by invoking the MCP tools."
+header_context = f"{user_context}\n{system_context}"
 max_context_words = 1000
 
 # Initialize the client

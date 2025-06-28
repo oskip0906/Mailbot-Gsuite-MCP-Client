@@ -7,20 +7,26 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div id="chat-container">
-        <div id="header">
-            <h1>Google Workspace Assistant</h1>
-            <br>
-            <p>Your AI-powered Google assistant. Type 'list' for commands.</p>
+    <div id="main-container">
+        <div id="history-panel">
+            <h2>Tools History</h2>
+            <div id="history-content">
+            </div>
         </div>
-        <div id="chat-box">
-            <!-- Chat messages will be appended here -->
-        </div>
-        <div id="input-area">
-            <form id="command-form">
-                <input type="text" id="user-input" placeholder="Type your command..." autocomplete="off" required>
-                <button type="submit">Send</button>
-            </form>
+        <div id="chat-container">
+            <div id="header">
+                <h1>MailBot</h1>
+                <p>Your AI assistant for managing your emails</p>
+            </div>
+            <div id="chat-box"></div>
+            <div id="input-area">
+                <form id="command-form">
+                    <input type="text" id="user-input" placeholder="Type your command..." autocomplete="off">
+                    <button type="submit" style="padding: 10px 20px;">Send</button>
+                    <button type="button" id="record-btn">🎤</button>
+                </form>
+                <div id="speech-controls"></div>
+            </div>
         </div>
     </div>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
