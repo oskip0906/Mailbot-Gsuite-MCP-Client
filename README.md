@@ -1,4 +1,4 @@
-## Interactive Web Interface that uses Gemini and integrates the [Gsuite MCP server](https://github.com/MarkusPfundstein/mcp-gsuite)
+## Interactive Web Interface that uses Gemini and integrates the [Gsuite MCP server](https://github.com/MarkusPfundstein/mcp-gsuite) (as of currently; will have custom server in the future)
 
 ![Demo](demo.png)
 
