@@ -142,6 +142,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let entryContent = `<h4>${toolName}</h4>`;
         entryContent += `<details><summary>Input</summary><pre>${toolInput}</pre></details>`;
         entryContent += `<details><summary>Output</summary><pre>${toolOutput}</pre></details>`;
+        entryContent += `<p><small>Time: ${new Date().toLocaleString()}</small></p>`;
+        entryContent += `<br><hr><br>`;
 
         historyEntry.innerHTML = entryContent;
         toolHistory.prepend(historyEntry); // Prepend to show the latest first

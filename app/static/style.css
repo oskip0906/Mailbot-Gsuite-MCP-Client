@@ -221,18 +221,6 @@ body {
     transform: translateY(-2px) scale(1.01);
 }
 
-.history-item::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: calc(100% - 36px);
-    height: 1px;
-    background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-    opacity: 0.3;
-}
-
 .history-summary strong {
     color: var(--accent-primary);
     font-weight: 600;
