@@ -5,11 +5,13 @@
 ### Features
 
 -   **Natural Language Interface**: Control your Google Workspace with plain English commands.
--   **AI-Powered Tool Selection**: Uses Google Gemini to intelligently determine which Gsuite tool to use based on request.
+-   **AI-Powered Tool Selection**: Uses Google Gemini to intelligently determine which Gsuite tool to use based on 
+request.
 -   **User-Friendly Summaries**: Tool outputs are summarized by the LLM for clarity.
 -   **Tool History**: A side panel shows a history of all tool calls, including inputs, outputs, and time.
 -   **Voice Input**: Supports hands-free operation using the Web Speech API.
 -   **Modern UI**: A sleek, responsive interface with a futuristic theme.
+- **Additional Feature**: Includes a time scheduler for calendar events based on vague descriptions of tasks/events within specified time ranges (not part of the gsuite MCP).
 
 ### How It Works
 
@@ -35,7 +37,7 @@ The application consists of two main components:
 
 1.  **Prerequisites**:
     - Google Cloud credentials configured in `server/` for `mcp-gsuite`. See [this link](https://github.com/MarkusPfundstein/mcp-gsuite).
-    - In the `app/` directory, create a file named `.env` with the following contents
+    - In the root directory, create a file named `.env` with the following contents
     
      ```dotenv
      LLM_API_KEY="YOUR_GEMINI_API_KEY"

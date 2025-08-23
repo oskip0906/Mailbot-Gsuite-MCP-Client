@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MailBot</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     <div id="main-container">
@@ -21,7 +22,7 @@
             <div id="chat-box"></div>
             <div id="input-area">
                 <form id="command-form">
-                    <input type="text" id="user-input" placeholder="Type your command..." autocomplete="off">
+                    <textarea id="user-input" placeholder="Type your command..." autocomplete="off" rows="1"></textarea>
                     <button type="submit" style="padding: 10px 20px;">Send</button>
                     <button type="button" id="record-btn">🎤</button>
                 </form>

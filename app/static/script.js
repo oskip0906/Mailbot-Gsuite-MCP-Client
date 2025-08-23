@@ -53,11 +53,28 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Speech recognition not supported in this browser.");
     }
 
+    // Handle textarea auto-resize
+    function autoResize() {
+        userInput.style.height = 'auto';
+        userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
+    }
+
+    userInput.addEventListener('input', autoResize);
+
+    // Handle Enter vs Shift+Enter
+    userInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            commandForm.dispatchEvent(new Event('submit'));
+        }
+    });
+
     commandForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const command = userInput.value.trim();
         if (!command) return;
         userInput.value = '';
+        autoResize(); // Reset height after clearing
         await sendCommand(command);
     });
 
@@ -89,11 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function appendMessage(content, className) {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message', ...className.split(' '));
-        
-        // Create a container for the message content
-        const messageContent = document.createElement('span');
-        messageContent.innerHTML = content;
-        messageDiv.appendChild(messageContent);
+        messageDiv.innerHTML = content;
         chatBox.appendChild(messageDiv);
         chatBox.scrollTop = chatBox.scrollHeight;
         return messageDiv;
@@ -105,9 +118,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.error) {
             content = `<strong>Error:</strong> ${data.error}`;
             rawText = data.error;
-        } else if (data.response) {
+        } 
+        else if (data.response) {
             rawText = data.response;
-            content = data.response.replace(/\n/g, '<br>');
+            content = marked.parse(data.response);
             if (data.raw_json) {
                 const toolName = data.tool_used || 'Tool Output';
                 let jsonContent = data.raw_json;
@@ -130,13 +144,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const historyEntry = document.createElement('div');
         historyEntry.classList.add('history-entry');
 
-        const toolName = data.tool_used || 'Unknown Tool';
+        if (!data.tool_used) return;
+        
+        const toolName = data.tool_used;
         const toolInput = data.tool_input ? JSON.stringify(data.tool_input, null, 2) : 'No input';
         let toolOutput = data.raw_json; // Already a stringified JSON
         try {
             toolOutput = JSON.stringify(JSON.parse(toolOutput), null, 2);
         } catch(e) {
-            // not json
+            toolOutput = "Invalid JSON format";
         }
 
         let entryContent = `<h4>${toolName}</h4>`;
@@ -150,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function formatStructuredData(data) {
-        if (data.title && data.commands) { // For 'help' command
+        if (data.title && data.commands) {
             let html = `<h3>${data.title}</h3>`;
             for (const [category, commands] of Object.entries(data.commands)) {
                 html += `<h4>${category}</h4><ul>`;
@@ -161,7 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return html;
         }
-        // For 'list', 'inspect', or other JSON responses
-        return `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        return `<pre style="white-space: pre-wrap; word-wrap: break-word; max-width: 100%; overflow-wrap: break-word;">${JSON.stringify(data, null, 2)}</pre>`;
     }
 });

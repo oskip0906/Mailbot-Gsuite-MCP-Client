@@ -7,16 +7,13 @@ fi
 
 # Activate virtual environment based on OS
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" || "$OSTYPE" == "cygwin" ]]; then
-    # Windows
     source .venv/Scripts/activate
 else
-    # Linux/macOS
     source .venv/bin/activate
 fi
 
-if [ ! -f ".venv/pyvenv.cfg" ] || [ ! -f ".venv/Scripts/pip" ]; then
-    python -m pip install -r requirements.txt
-fi
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 
 cd server
 

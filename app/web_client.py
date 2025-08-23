@@ -158,10 +158,10 @@ class InteractiveMCPClient:
                     model=self.llm_model_name,
                     contents=llm_conversation
                 )
-                final_response_text = response.text.strip()
+                final_response_text = response.text.strip() if response.text else "No response from LLM"
                 response_data = {"response": final_response_text}
             except Exception as e:
-                print(f"⚠️ LLM API error: {e}")
+                print(f"LLM API error: {e}")
                 final_response_text = f"LLM API error: {e}"
                 response_data = {"error": final_response_text}
         else:
@@ -169,7 +169,7 @@ class InteractiveMCPClient:
             arguments = tool_result['arguments']
             
             response_data = await self.execute_tool(detected_tool, arguments, user_input)
-
+            
             if "response" in response_data:
                 final_response_text = response_data["response"]
             elif "error" in response_data:
@@ -224,9 +224,25 @@ class InteractiveMCPClient:
                 response.raise_for_status()
                 result = response.json()
 
+            print(f"🔧 EXECUTE_TOOL DEBUG for {tool_name}:")
+            print(f"   HTTP result keys: {list(result.keys())}")
+            print(f"   HTTP success: {result.get('success')}")
+            if 'result' in result:
+                print(f"   Result type: {type(result.get('result'))}")
+                print(f"   Result (first 200 chars): {str(result.get('result'))[:200]}...")
+
             if result.get('success'):
-                summary, raw_json = self.generate_response(tool_name, result.get('result'), user_input)
-                return {"response": summary, "raw_json": raw_json, "tool_used": tool_name, "tool_input": arguments}
+                # For schedule_events_complete, generate a proper summary since it's the final result
+                if tool_name == "schedule_events_complete":
+                    summary, raw_json = self.generate_response(tool_name, result.get('result'), user_input)
+                    return {"response": summary, "raw_json": raw_json, "tool_used": tool_name, "tool_input": arguments}
+                # For old get_scheduling_context, use placeholder (but this tool should not be used anymore)
+                elif tool_name == "get_scheduling_context":
+                    raw_result = result.get('result')
+                    return {"response": "Scheduling workflow initiated", "raw_json": raw_result, "tool_used": tool_name, "tool_input": arguments}
+                else:
+                    summary, raw_json = self.generate_response(tool_name, result.get('result'), user_input)
+                    return {"response": summary, "raw_json": raw_json, "tool_used": tool_name, "tool_input": arguments}
             else:
                 return {"error": result.get('error', 'Unknown error'), "tool_used": tool_name, "tool_input": arguments}
         except Exception as e:

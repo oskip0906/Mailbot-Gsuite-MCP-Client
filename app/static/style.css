@@ -326,7 +326,7 @@ body {
 
 .message {
     max-width: 75%;
-    padding: 20px 24px;
+    padding: 20px 32px;
     border-radius: 20px;
     line-height: 1.6;
     font-size: 15px;
@@ -335,21 +335,27 @@ body {
 }
 
 .user-message {
-    background: linear-gradient(135deg, var(--accent-quaternary) 0%, var(--accent-secondary) 100%);
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
     color: var(--text-primary);
     align-self: flex-end;
     border-bottom-right-radius: 6px;
+    box-shadow: var(--shadow-medium);
     position: relative;
-    overflow: visible;
+    opacity: 0.95;
 }
 
 .user-message::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 0;
     right: 0;
-    bottom: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--accent-secondary), var(--accent-primary));
+    border-radius: 0 2px 2px 0;
+    opacity: 0.8;
 }
 
 .bot-message {
@@ -361,6 +367,7 @@ body {
     border-bottom-left-radius: 6px;
     box-shadow: var(--shadow-medium);
     position: relative;
+    opacity: 1;
 }
 
 .bot-message::before {
@@ -372,6 +379,16 @@ body {
     height: 100%;
     background: linear-gradient(180deg, var(--accent-primary), var(--accent-tertiary));
     border-radius: 2px 0 0 2px;
+}
+
+.bot-message a {
+    color: #87CEEB;
+    text-decoration: underline;
+}
+
+.bot-message a:hover {
+    color: #ADD8E6;
+    text-decoration: none;
 }
 
 .bot-message pre {
@@ -637,7 +654,7 @@ body {
     
     .message {
         max-width: 85%;
-        padding: 16px 20px;
+        padding: 16px 28px;
     }
     
     #command-form {
@@ -657,7 +674,7 @@ body {
     
     .message {
         max-width: 90%;
-        padding: 14px 18px;
+        padding: 14px 24px;
         font-size: 14px;
     }
 }
